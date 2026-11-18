@@ -6,6 +6,15 @@ described in `VERSIONING.md`.
 
 ## [Unreleased]
 
+### Changed
+
+- Every GitHub Action the workflows run is pinned to a commit, with its release
+  named beside it, and Dependabot keeps those pins and the dev tools current.
+  CI ends in one `ci-passed` job for the branch ruleset to require. The release
+  refuses to build in a fork and is never cancelled mid-upload. ruff is pinned
+  to the version the Sigrix platform formats the rules with. Nothing in the
+  package changes.
+
 ## [0.0.1] — 2026-11-18
 
 First release: the name, and the first check.

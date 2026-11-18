@@ -32,7 +32,9 @@ dependencies = []
 yaml = ["pyyaml>=6"]
 dev = [
     "pytest>=8",
-    "ruff>=0.6",
+    # The version the Sigrix platform formats the copied rules with
+    # (CONTRIBUTING.md § Rules); Dependabot moves it, on a pull request of its own.
+    "ruff==0.17.4",
 ]
 
 [project.scripts]
@@ -48,6 +50,9 @@ packages = ["src/tollhouse"]
 
 [tool.hatch.build.targets.sdist]
 include = ["src/tollhouse", "tests", "README.md", "LICENSE", "NOTICE", "CHANGELOG.md"]
+# The pin guard reads .github/workflows, which the sdist does not carry: it
+# checks the repository, not the package.
+exclude = ["tests/test_workflow_pins.py"]
 
 [tool.ruff]
 line-length = 120
