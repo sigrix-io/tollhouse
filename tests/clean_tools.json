@@ -1,0 +1,27 @@
+{
+  "tools": [
+    {
+      "name": "watch_models",
+      "title": "Watch models",
+      "description": "Check the providers' pages and report what changed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": ["openai", "google", "xai", "anthropic"],
+            "description": "Whose pages to check."
+          },
+          "since_days": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 90,
+            "description": "How far back to report."
+          }
+        },
+        "required": ["provider"]
+      },
+      "annotations": {"readOnlyHint": true}
+    }
+  ]
+}

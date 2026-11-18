@@ -1,0 +1,12 @@
+Tollhouse
+Copyright 2026 Sigrix
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+src/tollhouse/rules/ is a copy of the rules the Sigrix platform runs when an
+MCP server is uploaded to it, under the same licence. It is changed there and
+copied here, never edited in place, so the two cannot disagree.
+
+Trademarks. "Sigrix" and the Sigrix logo are trademarks of Sigrix. The Apache
+License does not grant permission to use them. A fork or a derived work must
+not present itself as Sigrix or as published by Sigrix.
