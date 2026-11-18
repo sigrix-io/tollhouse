@@ -6,7 +6,7 @@ described in `VERSIONING.md`.
 
 ## [Unreleased]
 
-## [0.0.1]
+## [0.0.1] — 2026-11-18
 
 First release: the name, and the first check.
 
