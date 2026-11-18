@@ -31,6 +31,7 @@ what you broke and which test caught it.
 - [ ] `pytest`
 - [ ] `ruff check .`
 - [ ] `ruff format --check .`
+- [ ] `mypy`
 - [ ] Still the standard library only, with no network call, no server started and no file written
 - [ ] No real key in a test or an example, even a revoked one
 - [ ] `CHANGELOG.md` has a line under *Unreleased*
