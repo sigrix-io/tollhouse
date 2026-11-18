@@ -1,0 +1,44 @@
+name: Wrong finding
+description: The check reports a phrase that is not there, misses one that is, or cannot read a real client's tools/list file.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        `tollhouse check` reads the file you name and nothing else: no network
+        call, no file written. A finding quotes up to 80 characters of the text
+        it matched, so what it printed can carry a phrase from the tools it
+        read. Make the smallest file that shows the problem rather than pasting
+        a whole server's answer, and never paste a real key, even a revoked
+        one: describe its shape instead. If the tools are a server someone else
+        publishes, tell its author first (SECURITY.md). If the check itself can
+        be made to do harm, that is a vulnerability: email security@sigrix.io
+        instead of filing it here.
+  - type: textarea
+    id: output
+    attributes:
+      label: What `tollhouse check --json` printed
+      description: >-
+        The JSON answer is what a test can be written from. The plain output is
+        fine too, if that is what you have.
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: The string, and what should have happened
+      description: >-
+        The string it misread, or the smallest tools/list file that shows it,
+        and whether it should have been found or left alone. For a file it
+        could not read, which client or server wrote it.
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: tollhouse, how you ran it (uvx, pipx or pip), Python, and the operating system.
+      placeholder: "tollhouse 0.0.1, uvx, Python 3.12, Windows 11"
+    validations:
+      required: true

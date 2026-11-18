@@ -6,7 +6,31 @@ described in `VERSIONING.md`.
 
 ## [Unreleased]
 
-## [0.0.1]
+### Added
+
+- `CODE_OF_CONDUCT.md`, issue forms and a pull request template, the set the
+  other open repositories carry. Blank issues are off: a report is a wrong
+  finding or a change, and the links beside the forms send a security report
+  to security@sigrix.io, a finding in someone else's server to its author, and
+  a conduct concern to conduct@sigrix.io. Nothing in the package changes.
+- `py.typed`: the package's annotations, the copied rules' included, are
+  checked with mypy in strict mode, so a type checker reading code that
+  imports Tollhouse can trust them.
+
+### Changed
+
+- The release checks the wheel before the upload, then installs the published
+  version from PyPI by name and checks that it reports that version, carries
+  `py.typed`, and that its `tollhouse` command passes a clean file and finds a
+  catalogue phrase.
+- Every GitHub Action the workflows run is pinned to a commit, with its release
+  named beside it, and Dependabot keeps those pins and the dev tools current.
+  CI ends in one `ci-passed` job for the branch ruleset to require. The release
+  refuses to build in a fork and is never cancelled mid-upload. ruff is pinned
+  to the version the Sigrix platform formats the rules with. Nothing in the
+  package changes.
+
+## [0.0.1] — 2026-11-18
 
 First release: the name, and the first check.
 

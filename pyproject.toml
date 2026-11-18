@@ -22,6 +22,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Security",
+    "Typing :: Typed",
 ]
 # The standard library only, so `uvx tollhouse check` installs one package.
 # PyYAML is read lazily by the YAML reading in the rules, which no 0.0.1
@@ -32,7 +33,14 @@ dependencies = []
 yaml = ["pyyaml>=6"]
 dev = [
     "pytest>=8",
-    "ruff>=0.6",
+    # The version the Sigrix platform formats the copied rules with
+    # (CONTRIBUTING.md § Rules); Dependabot moves it, on a pull request of its own.
+    "ruff==0.17.4",
+    # The other Sigrix packages' pin, for the same reason: a floating checker turns
+    # its own release into a red build on a commit that changed nothing.
+    "mypy==2.4.1",
+    # The stubs for the PyYAML the rules import when a YAML document is read.
+    "types-PyYAML>=6.0",
 ]
 
 [project.scripts]
@@ -48,6 +56,9 @@ packages = ["src/tollhouse"]
 
 [tool.hatch.build.targets.sdist]
 include = ["src/tollhouse", "tests", "README.md", "LICENSE", "NOTICE", "CHANGELOG.md"]
+# The pin guard reads .github/workflows, which the sdist does not carry: it
+# checks the repository, not the package.
+exclude = ["tests/test_workflow_pins.py"]
 
 [tool.ruff]
 line-length = 120
@@ -59,6 +70,15 @@ ignore = ["E501"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101", "S603"]
+
+# py.typed ships in the wheel, which tells every consumer's type checker to
+# trust these annotations, so they are checked as strictly as the other Sigrix
+# packages check theirs, the copied rules included.
+[tool.mypy]
+strict = true
+python_version = "3.11"
+files = ["src/tollhouse"]
+mypy_path = "src"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

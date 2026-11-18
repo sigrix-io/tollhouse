@@ -1,0 +1,22 @@
+# The two forms alongside this file are the two kinds of report CONTRIBUTING.md
+# treats differently: a finding the check gets wrong, and a change. A blank
+# issue would let that sorting be skipped.
+blank_issues_enabled: false
+
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/sigrix-io/tollhouse/security/policy
+    about: >-
+      Do not open a public issue. Email security@sigrix.io, acknowledged within
+      three working days.
+  - name: Found something in someone else's server?
+    url: https://github.com/sigrix-io/tollhouse/blob/main/SECURITY.md#a-finding-in-someone-elses-server
+    about: >-
+      Tell its author rather than filing it here, where it would be public
+      before they can fix it. For a server sold on Sigrix, use the report link
+      on its listing's page.
+  - name: Raise a code of conduct concern
+    url: https://github.com/sigrix-io/tollhouse/blob/main/CODE_OF_CONDUCT.md
+    about: >-
+      Email conduct@sigrix.io. A different address and a different queue from
+      security reports; neither is a fallback for the other.

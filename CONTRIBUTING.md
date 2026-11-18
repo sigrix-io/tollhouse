@@ -33,7 +33,7 @@ platform's rule set and copied back.
 ```sh
 python -m venv .venv && . .venv/bin/activate
 pip install -e ".[dev]"
-ruff check . && ruff format --check . && pytest
+ruff check . && ruff format --check . && mypy && pytest
 ```
 
 ## Pull requests

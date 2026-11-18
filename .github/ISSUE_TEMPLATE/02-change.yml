@@ -1,0 +1,44 @@
+name: Change
+description: A rule to add or narrow, a clearer message, or a kind of file to read.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Today Tollhouse is one command, `tollhouse check`, over one kind of
+        file. A rule here is a pattern a reader can review in code, never a
+        model or a remote service, and the check reads the file it is given and
+        nothing else: a rule that judges intent rather than text, or a check
+        that reaches the network, starts a server or writes a file, does not
+        fit. The rules are copied from the Sigrix platform, which runs the same
+        checks at upload, so a change to one is made there and copied back. See
+        [CONTRIBUTING.md](https://github.com/sigrix-io/tollhouse/blob/main/CONTRIBUTING.md).
+  - type: textarea
+    id: problem
+    attributes:
+      label: What goes wrong today
+      description: >-
+        Describe the situation, not the feature: what you were checking, what
+        Tollhouse said or missed, and what that cost you.
+    validations:
+      required: true
+  - type: textarea
+    id: examples
+    attributes:
+      label: A string it should match, and one it should leave alone
+      description: >-
+        For a new rule or a changed one. Made up rather than copied from a
+        real server, and never a real key.
+    validations:
+      required: false
+  - type: dropdown
+    id: part
+    attributes:
+      label: Which part is this about?
+      options:
+        - A rule, and what it matches or leaves alone
+        - What `tollhouse check` prints or exits with
+        - A tools/list file it cannot read yet
+        - Not sure
+    validations:
+      required: true

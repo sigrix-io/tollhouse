@@ -30,7 +30,8 @@ assume:
 2. In this repository's settings, an **environment named `pypi`**. The
    publisher's claim names it, so a workflow running outside it is refused.
 
-Then:
+The version lives in two places, `pyproject.toml` and `src/tollhouse/__init__.py`;
+move both, and `tests/test_package_metadata.py` fails while they differ. Then:
 
 ```sh
 git tag v0.0.1 && git push origin v0.0.1
@@ -39,4 +40,9 @@ git tag v0.0.1 && git push origin v0.0.1
 The release workflow refuses a tag that differs from the version in
 `pyproject.toml`. Allow about ten minutes after the upload before expecting
 `uvx tollhouse` to resolve the new version: that is the index CDN's cache, not
-a failed publish.
+a failed publish. The release's `verify` job waits it out, installs the new
+version from PyPI by name, and fails the run if that never arrives, reports
+another version, lacks `py.typed`, or its `tollhouse` command does not answer
+with that version and find a catalogue phrase in a file carrying one. The build
+job runs the same checks against the wheel before the upload, because a version
+on PyPI can never be reused.
