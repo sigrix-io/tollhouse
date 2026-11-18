@@ -35,7 +35,7 @@ dev = [
     "pytest>=8",
     # The version the Sigrix platform formats the copied rules with
     # (CONTRIBUTING.md § Rules); Dependabot moves it, on a pull request of its own.
-    "ruff==0.17.4",
+    "ruff==0.17.5",
     # The other Sigrix packages' pin, for the same reason: a floating checker turns
     # its own release into a red build on a commit that changed nothing.
     "mypy==2.4.1",
