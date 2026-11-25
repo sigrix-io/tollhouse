@@ -11,6 +11,17 @@ from pathlib import Path
 from tollhouse import __version__
 from tollhouse.check import WARN, Report, ToolsFileError, check_tools, read_tools
 
+#: What every answer says was read for, so that a clean one is never taken for more than it is.
+CHECKED_LINE = (
+    "Checked: prompt-injection phrases and credentials (findings to fix), and what the tools say about the data they "
+    "hand out (warnings)."
+)
+#: And what it was not: a server whose tools are answered by another server reads clean here.
+NOT_CHECKED_LINE = (
+    "Not checked: the server's code, where it connects, or what its tools return when called. A server that "
+    "forwards its tool calls to another one can read clean here while that one decides every answer."
+)
+
 #: The last line of a check read by a person: where a server can be sold once it is clean.
 SELL_LINE = (
     "Selling an MCP server? Sigrix runs this check at upload, and a moderator reviews the server before anyone "
@@ -29,8 +40,9 @@ def build_parser() -> argparse.ArgumentParser:
         "check",
         help="check a server's tools/list answer",
         description=(
-            "Read a server's tools/list answer and report the prompt-injection phrases in any string a model is "
-            "handed: each tool's name, title, description and annotations, and every string in its input schema. "
+            "Read a server's tools/list answer and report prompt-injection phrases and credentials in any string a "
+            "model is handed (each tool's name, title, description and annotations, and every string in its input "
+            "schema), and warn on what the tools say about the data they hand out. "
             "Reads the file only. Exits 1 on a finding to fix (or on a warning too, with --strict) and 2 when the "
             "file cannot be read."
         ),
@@ -67,11 +79,8 @@ def render(report: Report, *, source: str) -> str:
                 "exits 0 (--strict makes it 1)."
             )
     else:
-        lines.append(
-            "No finding: none of the prompt-injection catalogue's phrases is in them. This checks a list of "
-            "phrases, not the server itself."
-        )
-    lines.extend(["", SELL_LINE])
+        lines.append("No finding: no rule matched. This reads what the tools say, not the server itself.")
+    lines.extend([CHECKED_LINE, NOT_CHECKED_LINE, "", SELL_LINE])
     return "\n".join(lines) + "\n"
 
 

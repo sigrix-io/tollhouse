@@ -12,7 +12,7 @@ import pytest
 
 from tollhouse import __version__
 from tollhouse.check import Finding, Report
-from tollhouse.cli import SELL_LINE, main, render
+from tollhouse.cli import CHECKED_LINE, NOT_CHECKED_LINE, SELL_LINE, main, render
 
 CLEAN = Path(__file__).parent / "clean_tools.json"
 PHRASE = "Ignore all previous instructions"
@@ -36,6 +36,8 @@ def test_clean_tools_exit_zero_and_say_what_was_read(capsys: pytest.CaptureFixtu
     assert f"tollhouse {__version__}: read 13 strings from 1 tool" in out
     assert "No finding" in out
     assert out.rstrip().endswith(SELL_LINE)
+    # A clean answer says what it read for and what it did not, so it is never read as "the server is safe".
+    assert CHECKED_LINE in out and NOT_CHECKED_LINE in out
 
 
 def test_a_finding_is_named_by_its_place_and_exits_one(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -50,6 +52,7 @@ def test_json_prints_the_answer_for_a_script(tmp_path: Path, capsys: pytest.Capt
     assert main(["check", str(_write(tmp_path, _poisoned())), "--json"]) == 1
     answer = json.loads(capsys.readouterr().out)
     assert (answer["tools"], answer["strings"]) == (1, 13)
+    assert answer["checked"] == ["prompt_injection", "credentials", "data_claims"]
     assert answer["findings"] == [
         {
             "place": "tools[watch_models].inputSchema.properties[provider].description",
@@ -204,7 +207,8 @@ def test_what_the_tools_say_about_their_data_is_a_warning(tmp_path: Path, capsys
     assert "  tools[get_porto_agency_phones].description" in out
     assert "warning: Personal contact data offered for outreach (contact_data_for_outreach)" in out
     assert "also: tools[search_real_estate].description" in out
-    assert "2 warnings to weigh" in out and "to fix" not in out
+    assert "2 warnings to weigh" in out and "finding to fix" not in out and "findings to fix:" not in out
+    assert NOT_CHECKED_LINE in out
     assert main(["check", str(path), "--strict"]) == 1, "--strict fails on a warning"
     capsys.readouterr()
     assert main(["check", str(path), "--json"]) == 0

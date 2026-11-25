@@ -45,6 +45,11 @@ described in `VERSIONING.md`.
   each out of the server's tools, which every client that installs it hands
   to its model. It said "N findings. A model reads each as an instruction",
   which a credential is not.
+- Every answer ends by saying what was checked and what was not: the server's
+  code, where it connects, and what its tools return, so a server that
+  forwards its tool calls elsewhere can read clean. A clean answer said "none
+  of the prompt-injection catalogue's phrases is in them"; it now says no rule
+  matched, then those two lines. `--json` gains `checked`, the checks it ran.
 - The release checks the wheel before the upload, then installs the published
   version from PyPI by name and checks that it reports that version, carries
   `py.typed`, and that its `tollhouse` command passes a clean file and finds a

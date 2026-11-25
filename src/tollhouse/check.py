@@ -22,6 +22,9 @@ class ToolsFileError(ValueError):
     """The file is not a ``tools/list`` answer this can read. The message says what to do."""
 
 
+#: What a check reads for, in the order it reports them: a script can tell a clean answer from one that never looked.
+CHECKS: tuple[str, ...] = ("prompt_injection", "credentials", "data_claims")
+
 #: A finding to fix: text no server should hand a model. A check exits 1 on one.
 BLOCK = "block"
 #: Words a person should weigh: they can be innocent. A check exits 0 on them unless asked to be strict.
@@ -67,6 +70,7 @@ class Report:
         return {
             "tools": self.tools,
             "strings": self.strings,
+            "checked": list(CHECKS),
             "findings": [finding.as_dict() for finding in self.findings],
         }
 
