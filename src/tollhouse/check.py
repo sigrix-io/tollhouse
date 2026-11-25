@@ -8,6 +8,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
+from tollhouse.rules.credential_scan import scan_text as scan_credentials
 from tollhouse.rules.injection_scan import scan_text
 from tollhouse.rules.tool_text import scan_tool_text, tool_text_strings
 
@@ -103,11 +104,20 @@ def tools_of(document: Any, path: Path) -> list[Any]:
 
 
 def check_tools(tools: list[Any]) -> Report:
-    """Every string the tools hand a model, against the prompt-injection catalogue."""
-    findings = tuple(
+    """Every string the tools hand a model, against the prompt-injection catalogue and the credential catalogue.
+
+    A credential is reported by a locator, its first and last few characters, never the key: the answer is printed,
+    piped and kept in build logs, and a check that repeated what it found would put the key in a second place.
+    """
+    injection = [
         Finding(place=match.field, rule=match.pattern_id, rule_name=match.pattern_name, matched=match.matched_text)
         for match in scan_tool_text(tools, scan_text)
-    )
+    ]
+    credentials = [
+        Finding(place=match.field, rule=match.pattern_id, rule_name=match.pattern_name, matched=match.redacted)
+        for match in scan_tool_text(tools, scan_credentials)
+    ]
+    findings = (*injection, *credentials)
     return Report(
         tools=sum(1 for tool in tools if isinstance(tool, dict)),
         strings=sum(1 for _ in tool_text_strings(tools)),

@@ -13,6 +13,11 @@ described in `VERSIONING.md`.
   with the data-claims case table, and tested here on it. The platform could
   not offer the credential catalogue for copying before: it sat beside the
   platform's event recording.
+- `tollhouse check` looks for credentials in every string it reads: provider
+  keys and tokens, as shapes that are a key or nothing, with documented sample
+  keys left alone. A credential is a finding to fix, reported by a locator
+  (its first and last few characters) and never the key. A check that passed
+  before can fail now.
 - `CODE_OF_CONDUCT.md`, issue forms and a pull request template, the set the
   other open repositories carry. Blank issues are off: a report is a wrong
   finding or a change, and the links beside the forms send a security report
@@ -30,6 +35,10 @@ described in `VERSIONING.md`.
   `--json` each finding gains `level` and `related` (the other places a
   finding drawn from several strings rests on), so a script reading it sees
   a new shape.
+- The line after the findings counts the findings to fix and says to take
+  each out of the server's tools, which every client that installs it hands
+  to its model. It said "N findings. A model reads each as an instruction",
+  which a credential is not.
 - The release checks the wheel before the upload, then installs the published
   version from PyPI by name and checks that it reports that version, carries
   `py.typed`, and that its `tollhouse` command passes a clean file and finds a

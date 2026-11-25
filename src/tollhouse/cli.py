@@ -58,8 +58,8 @@ def render(report: Report, *, source: str) -> str:
             lines.extend(f"    also: {place}" for place in finding.related)
         if report.blocking:
             lines.append(
-                f"{_count(len(report.blocking), 'finding')}. A model reads each as an instruction: take it out of the "
-                "server's tools."
+                f"{_count(len(report.blocking), 'finding')} to fix: take each out of the server's tools, which every "
+                "client that installs it hands to its model."
             )
         if report.warnings:
             lines.append(

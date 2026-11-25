@@ -43,7 +43,7 @@ def test_a_finding_is_named_by_its_place_and_exits_one(tmp_path: Path, capsys: p
     out = capsys.readouterr().out
     assert "tools[watch_models].inputSchema.properties[provider].description" in out
     assert "Ignore previous instructions (ignore_previous_instructions)" in out
-    assert "1 finding." in out
+    assert "1 finding to fix: take each out of the server's tools" in out
 
 
 def test_json_prints_the_answer_for_a_script(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -151,10 +151,36 @@ def test_a_warning_alone_exits_zero_unless_strict(levels: tuple[str, ...], plain
 def test_a_warning_is_labelled_and_counted_apart_from_a_finding_to_fix() -> None:
     out = render(_report("warn", "block"), source="tools.json")
     assert "    warning: R (r): 'm'" in out
-    assert "1 finding. " in out
+    assert "1 finding to fix" in out
     assert "1 warning to weigh" in out
 
 
 def test_strict_is_an_option_of_check(tmp_path: Path) -> None:
     assert main(["check", str(CLEAN), "--strict"]) == 0
     assert main(["check", str(_write(tmp_path, _poisoned())), "--strict"]) == 1
+
+
+# --- Credentials -----------------------------------------------------------------------------------------------------
+
+#: A key's shape and nothing more: the test writes no real key, even a revoked one.
+KEY = "sk-ant-api03-" + "Q" * 90
+
+
+def _with_a_key() -> dict:
+    document = json.loads(CLEAN.read_text(encoding="utf-8"))
+    document["tools"][0]["inputSchema"]["properties"]["provider"]["examples"] = [f"--key {KEY}"]
+    return document
+
+
+def test_a_credential_is_a_finding_to_fix_named_by_a_locator(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    path = _write(tmp_path, _with_a_key())
+    assert main(["check", str(path)]) == 1
+    out = capsys.readouterr().out
+    assert "tools[watch_models].inputSchema.properties[provider].examples[0]" in out
+    assert "Anthropic API key (anthropic_api_key)" in out
+    assert main(["check", str(path), "--json"]) == 1
+    (finding,) = json.loads(capsys.readouterr().out)["findings"]
+    assert (finding["rule"], finding["level"]) == ("anthropic_api_key", "block")
+    assert KEY not in out and KEY not in json.dumps(finding), "the answer never repeats the key"
