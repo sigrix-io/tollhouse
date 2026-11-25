@@ -9,7 +9,18 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from tollhouse import __version__
-from tollhouse.check import Report, ToolsFileError, check_tools, read_tools
+from tollhouse.check import WARN, Report, ToolsFileError, check_tools, read_tools
+
+#: What every answer says was read for, so that a clean one is never taken for more than it is.
+CHECKED_LINE = (
+    "Checked: prompt-injection phrases and credentials (findings to fix), and what the tools say about the data they "
+    "hand out (warnings)."
+)
+#: And what it was not: a server whose tools are answered by another server reads clean here.
+NOT_CHECKED_LINE = (
+    "Not checked: the server's code, where it connects, or what its tools return when called. A server that "
+    "forwards its tool calls to another one can read clean here while that one decides every answer."
+)
 
 #: The last line of a check read by a person: where a server can be sold once it is clean.
 SELL_LINE = (
@@ -29,13 +40,20 @@ def build_parser() -> argparse.ArgumentParser:
         "check",
         help="check a server's tools/list answer",
         description=(
-            "Read a server's tools/list answer and report the prompt-injection phrases in any string a model is "
-            "handed: each tool's name, title, description and annotations, and every string in its input schema. "
-            "Reads the file only. Exits 1 on a finding and 2 when the file cannot be read."
+            "Read a server's tools/list answer and report prompt-injection phrases and credentials in any string a "
+            "model is handed (each tool's name, title, description and annotations, and every string in its input "
+            "schema), and warn on what the tools say about the data they hand out. "
+            "Reads the file only. Exits 1 on a finding to fix (or on a warning too, with --strict) and 2 when the "
+            "file cannot be read."
         ),
     )
     check.add_argument("tools", type=Path, help="a file holding the server's tools/list answer")
     check.add_argument("--json", action="store_true", help="print the answer as JSON")
+    check.add_argument(
+        "--strict",
+        action="store_true",
+        help="exit 1 on a warning too, not only on a finding to fix",
+    )
     return parser
 
 
@@ -46,18 +64,23 @@ def render(report: Report, *, source: str) -> str:
     ]
     if report.findings:
         for finding in report.findings:
+            label = "warning: " if finding.level == WARN else ""
             lines.append(f"  {finding.place}")
-            lines.append(f"    {finding.rule_name} ({finding.rule}): {finding.matched!r}")
-        lines.append(
-            f"{_count(len(report.findings), 'finding')}. A model reads each as an instruction: take it out of the "
-            "server's tools."
-        )
+            lines.append(f"    {label}{finding.rule_name} ({finding.rule}): {finding.matched!r}")
+            lines.extend(f"    also: {place}" for place in finding.related)
+        if report.blocking:
+            lines.append(
+                f"{_count(len(report.blocking), 'finding')} to fix: take each out of the server's tools, which every "
+                "client that installs it hands to its model."
+            )
+        if report.warnings:
+            lines.append(
+                f"{_count(len(report.warnings), 'warning')} to weigh: the words can be innocent, so a warning alone "
+                "exits 0 (--strict makes it 1)."
+            )
     else:
-        lines.append(
-            "No finding: none of the prompt-injection catalogue's phrases is in them. This checks a list of "
-            "phrases, not the server itself."
-        )
-    lines.extend(["", SELL_LINE])
+        lines.append("No finding: no rule matched. This reads what the tools say, not the server itself.")
+    lines.extend([CHECKED_LINE, NOT_CHECKED_LINE, "", SELL_LINE])
     return "\n".join(lines) + "\n"
 
 
@@ -73,7 +96,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         sys.stdout.write(json.dumps(report.as_dict(), indent=2) + "\n")
     else:
         sys.stdout.write(render(report, source=str(args.tools)))
-    return 1 if report.findings else 0
+    return report.exit_code(strict=args.strict)
 
 
 def _count(number: int, noun: str) -> str:

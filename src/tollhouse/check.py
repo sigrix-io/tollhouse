@@ -8,6 +8,8 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
+from tollhouse.rules.credential_scan import scan_text as scan_credentials
+from tollhouse.rules.data_claims import FINDING_RULES, data_findings
 from tollhouse.rules.injection_scan import scan_text
 from tollhouse.rules.tool_text import scan_tool_text, tool_text_strings
 
@@ -20,17 +22,28 @@ class ToolsFileError(ValueError):
     """The file is not a ``tools/list`` answer this can read. The message says what to do."""
 
 
+#: What a check reads for, in the order it reports them: a script can tell a clean answer from one that never looked.
+CHECKS: tuple[str, ...] = ("prompt_injection", "credentials", "data_claims")
+
+#: A finding to fix: text no server should hand a model. A check exits 1 on one.
+BLOCK = "block"
+#: Words a person should weigh: they can be innocent. A check exits 0 on them unless asked to be strict.
+WARN = "warn"
+
+
 @dataclass(frozen=True)
 class Finding:
-    """One rule's match in one string a model is handed."""
+    """One rule's match in the strings a model is handed."""
 
     place: str  # where the string sits, e.g. tools[search].inputSchema.properties[query].description
     rule: str  # the rule's stable id
     rule_name: str
-    matched: str  # at most 80 characters of the text that matched
+    matched: str  # at most 80 characters of the text that matched, or a locator that never repeats a key
+    level: str = BLOCK  # BLOCK or WARN
+    related: tuple[str, ...] = ()  # the other places a finding drawn from several strings rests on
 
-    def as_dict(self) -> dict[str, str]:
-        return asdict(self)
+    def as_dict(self) -> dict[str, Any]:
+        return {**asdict(self), "related": list(self.related)}
 
 
 @dataclass(frozen=True)
@@ -41,10 +54,23 @@ class Report:
     strings: int
     findings: tuple[Finding, ...]
 
+    @property
+    def blocking(self) -> tuple[Finding, ...]:
+        return tuple(finding for finding in self.findings if finding.level == BLOCK)
+
+    @property
+    def warnings(self) -> tuple[Finding, ...]:
+        return tuple(finding for finding in self.findings if finding.level == WARN)
+
+    def exit_code(self, *, strict: bool = False) -> int:
+        """1 on a blocking finding, or on any finding when ``strict``; else 0."""
+        return 1 if self.blocking or (strict and self.findings) else 0
+
     def as_dict(self) -> dict[str, Any]:
         return {
             "tools": self.tools,
             "strings": self.strings,
+            "checked": list(CHECKS),
             "findings": [finding.as_dict() for finding in self.findings],
         }
 
@@ -83,11 +109,36 @@ def tools_of(document: Any, path: Path) -> list[Any]:
 
 
 def check_tools(tools: list[Any]) -> Report:
-    """Every string the tools hand a model, against the prompt-injection catalogue."""
-    findings = tuple(
+    """Every string the tools hand a model, against the prompt-injection catalogue and the credential catalogue,
+    and what the tools say about the data they hand out.
+
+    A credential is reported by a locator, its first and last few characters, never the key: the answer is printed,
+    piped and kept in build logs, and a check that repeated what it found would put the key in a second place.
+
+    What the tools say about their data is a warning, never a finding to fix: personal contact data offered for
+    outreach, contact data beside a scraped source, an open-data claim beside one. The words can be innocent, so a
+    person weighs them; each warning is placed at its first string and names the others it rests on.
+    """
+    injection = [
         Finding(place=match.field, rule=match.pattern_id, rule_name=match.pattern_name, matched=match.matched_text)
         for match in scan_tool_text(tools, scan_text)
-    )
+    ]
+    credentials = [
+        Finding(place=match.field, rule=match.pattern_id, rule_name=match.pattern_name, matched=match.redacted)
+        for match in scan_tool_text(tools, scan_credentials)
+    ]
+    data = [
+        Finding(
+            place=finding.places[0],
+            rule=finding.rule,
+            rule_name=FINDING_RULES[finding.rule],
+            matched=" · ".join(dict.fromkeys(match.matched_text for match in finding.matches)),
+            level=WARN,
+            related=finding.places[1:],
+        )
+        for finding in data_findings(tools)
+    ]
+    findings = (*injection, *credentials, *data)
     return Report(
         tools=sum(1 for tool in tools if isinstance(tool, dict)),
         strings=sum(1 for _ in tool_text_strings(tools)),

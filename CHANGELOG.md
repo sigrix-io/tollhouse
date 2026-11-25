@@ -8,6 +8,22 @@ described in `VERSIONING.md`.
 
 ### Added
 
+- The credential catalogue (`rules/credential_scan.py`) and the data-claims
+  rules (`rules/data_claims.py`), copied from the Sigrix platform's rule set
+  with the data-claims case table, and tested here on it. The platform could
+  not offer the credential catalogue for copying before: it sat beside the
+  platform's event recording.
+- `tollhouse check` looks for credentials in every string it reads: provider
+  keys and tokens, as shapes that are a key or nothing, with documented sample
+  keys left alone. A credential is a finding to fix, reported by a locator
+  (its first and last few characters) and never the key. A check that passed
+  before can fail now.
+- `tollhouse check` warns on what a server's tools say about the data they
+  hand out: personal contact data offered for outreach, contact data beside a
+  scraped source, and an open-data claim beside one. A signal alone is
+  ordinary (an SMS tool takes a phone number), so only a combination warns,
+  and a warning alone exits 0. Each names the string it starts at and the
+  others it rests on.
 - `CODE_OF_CONDUCT.md`, issue forms and a pull request template, the set the
   other open repositories carry. Blank issues are off: a report is a wrong
   finding or a change, and the links beside the forms send a security report
@@ -19,6 +35,21 @@ described in `VERSIONING.md`.
 
 ### Changed
 
+- Each finding has a level: `block`, a finding to fix, or `warn`, words a
+  person should weigh because they can be innocent. A check exits 1 on a
+  finding to fix, and on a warning too only with the new `--strict`. In
+  `--json` each finding gains `level` and `related` (the other places a
+  finding drawn from several strings rests on), so a script reading it sees
+  a new shape.
+- The line after the findings counts the findings to fix and says to take
+  each out of the server's tools, which every client that installs it hands
+  to its model. It said "N findings. A model reads each as an instruction",
+  which a credential is not.
+- Every answer ends by saying what was checked and what was not: the server's
+  code, where it connects, and what its tools return, so a server that
+  forwards its tool calls elsewhere can read clean. A clean answer said "none
+  of the prompt-injection catalogue's phrases is in them"; it now says no rule
+  matched, then those two lines. `--json` gains `checked`, the checks it ran.
 - The release checks the wheel before the upload, then installs the published
   version from PyPI by name and checks that it reports that version, carries
   `py.typed`, and that its `tollhouse` command passes a clean file and finds a

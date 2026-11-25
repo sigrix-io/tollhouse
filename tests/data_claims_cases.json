@@ -1,0 +1,360 @@
+{
+  "_comment": [
+    "What a server's tools, and its summary, say about the data they hand out, as src/tollhouse/rules/data_claims.py",
+    "reads it. signals: a sentence and the signals it holds, in the catalogue's order; a signal alone is never a",
+    "finding. cases: a summary and tools, and the findings they raise, each [rule, tool, places] in the rules' order.",
+    "Copied from the Sigrix platform, which holds its own copy of the rules to the same table."
+  ],
+  "signals": [
+    [
+      "Same Porto estate-agency leads with phone numbers populated, for outreach.",
+      [
+        "contact_data",
+        "outreach_use"
+      ]
+    ],
+    [
+      "Search real-estate listings scraped from Imovirtual-style portals.",
+      [
+        "scraped_source"
+      ]
+    ],
+    [
+      "MCP stdio server for Portuguese open datasets (tenders, real-estate, Porto agency leads)",
+      [
+        "open_data_claim"
+      ]
+    ],
+    [
+      "Send an SMS to a phone number.",
+      [
+        "contact_data"
+      ]
+    ],
+    [
+      "Look up a customer's email address in your CRM.",
+      [
+        "contact_data"
+      ]
+    ],
+    [
+      "Telephone numbers and home addresses of residents.",
+      [
+        "contact_data"
+      ]
+    ],
+    [
+      "Export the contact details of every lead.",
+      [
+        "contact_data"
+      ]
+    ],
+    [
+      "Mobile no. of each agent.",
+      [
+        "contact_data"
+      ]
+    ],
+    [
+      "Scrape a web page and return its text as Markdown.",
+      [
+        "scraped_source"
+      ]
+    ],
+    [
+      "Crawl a site and list its broken links.",
+      [
+        "scraped_source"
+      ]
+    ],
+    [
+      "Harvest the RSS feeds you follow.",
+      [
+        "scraped_source"
+      ]
+    ],
+    [
+      "Cold-call scripts and cold emails for B2B prospecting.",
+      [
+        "outreach_use"
+      ]
+    ],
+    [
+      "Build a mailing list from sign-ups.",
+      [
+        "outreach_use"
+      ]
+    ],
+    [
+      "Lead generation for agencies.",
+      [
+        "outreach_use"
+      ]
+    ],
+    [
+      "Search the EU open data portal for datasets.",
+      [
+        "open_data_claim"
+      ]
+    ],
+    [
+      "Publicly available datasets from the national statistics office.",
+      [
+        "open_data_claim"
+      ]
+    ],
+    [
+      "Official statistics from the statistics office.",
+      [
+        "open_data_claim"
+      ]
+    ],
+    [
+      "Read the leads in your CRM.",
+      []
+    ],
+    [
+      "Fetch a web page and return its text as Markdown.",
+      []
+    ],
+    [
+      "A scrapbook of your notes.",
+      []
+    ],
+    [
+      "The phone app's settings.",
+      []
+    ],
+    [
+      "Open the dataset file you choose.",
+      []
+    ],
+    [
+      "Read the fund's prospectus.",
+      []
+    ],
+    [
+      "Search Portuguese public tenders on base.gov.pt.",
+      []
+    ]
+  ],
+  "cases": [
+    {
+      "name": "the case behind the rules: scraped listings, agents' phone numbers for outreach, called open datasets",
+      "summary": "MCP stdio server for Portuguese open datasets (tenders, real-estate, Porto agency leads)",
+      "tools": [
+        {
+          "name": "search_tenders",
+          "description": "Search Portuguese public tenders on base.gov.pt."
+        },
+        {
+          "name": "search_real_estate",
+          "description": "Search real-estate listings scraped from Imovirtual-style portals."
+        },
+        {
+          "name": "get_porto_agency_leads",
+          "description": "Fetch verified Porto estate-agency leads."
+        },
+        {
+          "name": "get_porto_agency_phones",
+          "description": "Same Porto estate-agency leads with phone numbers populated, for outreach."
+        },
+        {
+          "name": "get_tender",
+          "description": "Fetch one tender by its id."
+        }
+      ],
+      "findings": [
+        [
+          "contact_data_for_outreach",
+          "tools[get_porto_agency_phones]",
+          [
+            "tools[get_porto_agency_phones].description"
+          ]
+        ],
+        [
+          "scraped_contact_data",
+          "tools[get_porto_agency_phones]",
+          [
+            "tools[get_porto_agency_phones].description",
+            "tools[search_real_estate].description"
+          ]
+        ],
+        [
+          "open_data_contradicted",
+          "tools[search_real_estate]",
+          [
+            "summary",
+            "tools[search_real_estate].description"
+          ]
+        ]
+      ]
+    },
+    {
+      "name": "an SMS sender takes a phone number",
+      "summary": "Send text messages through your own account.",
+      "tools": [
+        {
+          "name": "send_sms",
+          "description": "Send an SMS to a phone number.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "to": {
+                "type": "string",
+                "description": "The recipient's phone number, in E.164 form."
+              }
+            }
+          }
+        }
+      ],
+      "findings": []
+    },
+    {
+      "name": "a CRM reader hands its user their own contacts and leads",
+      "summary": "",
+      "tools": [
+        {
+          "name": "get_contact",
+          "description": "Read a contact from your CRM, with their email address and phone number."
+        },
+        {
+          "name": "list_leads",
+          "description": "List the leads in your CRM."
+        }
+      ],
+      "findings": []
+    },
+    {
+      "name": "an open-data portal's client says open data, and scrapes nothing",
+      "summary": "A client for the EU open data portal.",
+      "tools": [
+        {
+          "name": "search_datasets",
+          "description": "Search open datasets on data.europa.eu."
+        }
+      ],
+      "findings": []
+    },
+    {
+      "name": "a web scraper that hands out no personal data",
+      "summary": "Read web pages as Markdown.",
+      "tools": [
+        {
+          "name": "scrape_page",
+          "description": "Scrape a web page and return its text as Markdown."
+        }
+      ],
+      "findings": []
+    },
+    {
+      "name": "a crawler that hands out the email addresses it finds",
+      "summary": "",
+      "tools": [
+        {
+          "name": "find_emails",
+          "description": "Crawl a company's site and return the email addresses on it."
+        }
+      ],
+      "findings": [
+        [
+          "scraped_contact_data",
+          "tools[find_emails]",
+          [
+            "tools[find_emails].description"
+          ]
+        ]
+      ]
+    },
+    {
+      "name": "contact data for outreach in an argument's description, not the tool's",
+      "summary": "",
+      "tools": [
+        {
+          "name": "export_leads",
+          "description": "Export leads.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "format": {
+                "type": "string",
+                "description": "A CSV with phone numbers, ready for cold calling."
+              }
+            }
+          }
+        }
+      ],
+      "findings": [
+        [
+          "contact_data_for_outreach",
+          "tools[export_leads]",
+          [
+            "tools[export_leads].inputSchema.properties[format].description"
+          ]
+        ]
+      ]
+    },
+    {
+      "name": "an official-data claim in one tool, and a scraper beside it",
+      "summary": "",
+      "tools": [
+        {
+          "name": "stats",
+          "description": "Official statistics for Portugal."
+        },
+        {
+          "name": "listings",
+          "description": "Listings scraped from portals."
+        }
+      ],
+      "findings": [
+        [
+          "open_data_contradicted",
+          "tools[listings]",
+          [
+            "tools[stats].description",
+            "tools[listings].description"
+          ]
+        ]
+      ]
+    },
+    {
+      "name": "a tool whose name is not an identifier is named by its position",
+      "summary": "",
+      "tools": [
+        {
+          "name": "get phones!",
+          "description": "Phone numbers for outreach."
+        }
+      ],
+      "findings": [
+        [
+          "contact_data_for_outreach",
+          "tools[#1]",
+          [
+            "tools[#1].description"
+          ]
+        ]
+      ]
+    },
+    {
+      "name": "read on purpose: a regular expression cannot read 'never', so a negation is a mention for a person to weigh",
+      "summary": "",
+      "tools": [
+        {
+          "name": "crawl_site",
+          "description": "Crawl a site and summarise it; never collects email addresses."
+        }
+      ],
+      "findings": [
+        [
+          "scraped_contact_data",
+          "tools[crawl_site]",
+          [
+            "tools[crawl_site].description"
+          ]
+        ]
+      ]
+    }
+  ]
+}

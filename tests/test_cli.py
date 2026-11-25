@@ -11,7 +11,8 @@ from pathlib import Path
 import pytest
 
 from tollhouse import __version__
-from tollhouse.cli import SELL_LINE, main
+from tollhouse.check import Finding, Report
+from tollhouse.cli import CHECKED_LINE, NOT_CHECKED_LINE, SELL_LINE, main, render
 
 CLEAN = Path(__file__).parent / "clean_tools.json"
 PHRASE = "Ignore all previous instructions"
@@ -35,6 +36,8 @@ def test_clean_tools_exit_zero_and_say_what_was_read(capsys: pytest.CaptureFixtu
     assert f"tollhouse {__version__}: read 13 strings from 1 tool" in out
     assert "No finding" in out
     assert out.rstrip().endswith(SELL_LINE)
+    # A clean answer says what it read for and what it did not, so it is never read as "the server is safe".
+    assert CHECKED_LINE in out and NOT_CHECKED_LINE in out
 
 
 def test_a_finding_is_named_by_its_place_and_exits_one(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -42,19 +45,22 @@ def test_a_finding_is_named_by_its_place_and_exits_one(tmp_path: Path, capsys: p
     out = capsys.readouterr().out
     assert "tools[watch_models].inputSchema.properties[provider].description" in out
     assert "Ignore previous instructions (ignore_previous_instructions)" in out
-    assert "1 finding." in out
+    assert "1 finding to fix: take each out of the server's tools" in out
 
 
 def test_json_prints_the_answer_for_a_script(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     assert main(["check", str(_write(tmp_path, _poisoned())), "--json"]) == 1
     answer = json.loads(capsys.readouterr().out)
     assert (answer["tools"], answer["strings"]) == (1, 13)
+    assert answer["checked"] == ["prompt_injection", "credentials", "data_claims"]
     assert answer["findings"] == [
         {
             "place": "tools[watch_models].inputSchema.properties[provider].description",
             "rule": "ignore_previous_instructions",
             "rule_name": "Ignore previous instructions",
             "matched": PHRASE,
+            "level": "block",
+            "related": [],
         }
     ]
 
@@ -116,3 +122,104 @@ def test_output_a_pipe_cannot_encode_is_escaped_never_fatal(tmp_path: Path, monk
     assert main(["check", str(path)]) == 1
     sys.stdout.flush()
     assert b"tools-\\U0001f600.json" in buffer.getvalue()
+
+
+# --- Levels ----------------------------------------------------------------------------------------------------------
+
+
+def _report(*levels: str) -> Report:
+    findings = tuple(
+        Finding(place=f"tools[t].description#{n}", rule="r", rule_name="R", matched="m", level=level)
+        for n, level in enumerate(levels)
+    )
+    return Report(tools=1, strings=len(levels), findings=findings)
+
+
+@pytest.mark.parametrize(
+    ("levels", "plain", "strict"),
+    [
+        ((), 0, 0),
+        (("block",), 1, 1),
+        (("warn",), 0, 1),
+        (("warn", "block"), 1, 1),
+    ],
+    ids=["nothing", "a finding to fix", "a warning alone", "both"],
+)
+def test_a_warning_alone_exits_zero_unless_strict(levels: tuple[str, ...], plain: int, strict: int) -> None:
+    report = _report(*levels)
+    assert report.exit_code() == plain
+    assert report.exit_code(strict=True) == strict
+
+
+def test_a_warning_is_labelled_and_counted_apart_from_a_finding_to_fix() -> None:
+    out = render(_report("warn", "block"), source="tools.json")
+    assert "    warning: R (r): 'm'" in out
+    assert "1 finding to fix" in out
+    assert "1 warning to weigh" in out
+
+
+def test_strict_is_an_option_of_check(tmp_path: Path) -> None:
+    assert main(["check", str(CLEAN), "--strict"]) == 0
+    assert main(["check", str(_write(tmp_path, _poisoned())), "--strict"]) == 1
+
+
+# --- Credentials -----------------------------------------------------------------------------------------------------
+
+#: A key's shape and nothing more: the test writes no real key, even a revoked one.
+KEY = "sk-ant-api03-" + "Q" * 90
+
+
+def _with_a_key() -> dict:
+    document = json.loads(CLEAN.read_text(encoding="utf-8"))
+    document["tools"][0]["inputSchema"]["properties"]["provider"]["examples"] = [f"--key {KEY}"]
+    return document
+
+
+def test_a_credential_is_a_finding_to_fix_named_by_a_locator(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    path = _write(tmp_path, _with_a_key())
+    assert main(["check", str(path)]) == 1
+    out = capsys.readouterr().out
+    assert "tools[watch_models].inputSchema.properties[provider].examples[0]" in out
+    assert "Anthropic API key (anthropic_api_key)" in out
+    assert main(["check", str(path), "--json"]) == 1
+    (finding,) = json.loads(capsys.readouterr().out)["findings"]
+    assert (finding["rule"], finding["level"]) == ("anthropic_api_key", "block")
+    assert KEY not in out and KEY not in json.dumps(finding), "the answer never repeats the key"
+
+
+# --- What the tools say about their data -------------------------------------------------------------------------
+
+DATA_CLAIMS = json.loads((Path(__file__).parent / "data_claims_cases.json").read_text(encoding="utf-8"))
+
+
+def _scraped_contacts_for_outreach() -> dict:
+    """The case the rules were written for: scraped listings, and agents' phone numbers offered for outreach."""
+    (case,) = [case for case in DATA_CLAIMS["cases"] if case["name"].startswith("the case behind the rules")]
+    return {"tools": case["tools"]}
+
+
+def test_what_the_tools_say_about_their_data_is_a_warning(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    path = _write(tmp_path, _scraped_contacts_for_outreach())
+    assert main(["check", str(path)]) == 0, "a warning alone passes"
+    out = capsys.readouterr().out
+    assert "  tools[get_porto_agency_phones].description" in out
+    assert "warning: Personal contact data offered for outreach (contact_data_for_outreach)" in out
+    assert "also: tools[search_real_estate].description" in out
+    assert "2 warnings to weigh" in out and "finding to fix" not in out and "findings to fix:" not in out
+    assert NOT_CHECKED_LINE in out
+    assert main(["check", str(path), "--strict"]) == 1, "--strict fails on a warning"
+    capsys.readouterr()
+    assert main(["check", str(path), "--json"]) == 0
+    rules = [(f["rule"], f["level"], f["related"]) for f in json.loads(capsys.readouterr().out)["findings"]]
+    assert rules == [
+        ("contact_data_for_outreach", "warn", []),
+        ("scraped_contact_data", "warn", ["tools[search_real_estate].description"]),
+    ]
+
+
+def test_an_honest_server_raises_no_warning(tmp_path: Path) -> None:
+    for case in DATA_CLAIMS["cases"]:
+        if not case["findings"]:
+            assert main(["check", str(_write(tmp_path, {"tools": case["tools"]})), "--strict"]) == 0, case["name"]
