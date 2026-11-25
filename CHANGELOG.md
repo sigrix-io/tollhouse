@@ -24,6 +24,12 @@ described in `VERSIONING.md`.
 
 ### Changed
 
+- Each finding has a level: `block`, a finding to fix, or `warn`, words a
+  person should weigh because they can be innocent. A check exits 1 on a
+  finding to fix, and on a warning too only with the new `--strict`. In
+  `--json` each finding gains `level` and `related` (the other places a
+  finding drawn from several strings rests on), so a script reading it sees
+  a new shape.
 - The release checks the wheel before the upload, then installs the published
   version from PyPI by name and checks that it reports that version, carries
   `py.typed`, and that its `tollhouse` command passes a clean file and finds a

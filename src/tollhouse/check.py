@@ -20,17 +20,25 @@ class ToolsFileError(ValueError):
     """The file is not a ``tools/list`` answer this can read. The message says what to do."""
 
 
+#: A finding to fix: text no server should hand a model. A check exits 1 on one.
+BLOCK = "block"
+#: Words a person should weigh: they can be innocent. A check exits 0 on them unless asked to be strict.
+WARN = "warn"
+
+
 @dataclass(frozen=True)
 class Finding:
-    """One rule's match in one string a model is handed."""
+    """One rule's match in the strings a model is handed."""
 
     place: str  # where the string sits, e.g. tools[search].inputSchema.properties[query].description
     rule: str  # the rule's stable id
     rule_name: str
-    matched: str  # at most 80 characters of the text that matched
+    matched: str  # at most 80 characters of the text that matched, or a locator that never repeats a key
+    level: str = BLOCK  # BLOCK or WARN
+    related: tuple[str, ...] = ()  # the other places a finding drawn from several strings rests on
 
-    def as_dict(self) -> dict[str, str]:
-        return asdict(self)
+    def as_dict(self) -> dict[str, Any]:
+        return {**asdict(self), "related": list(self.related)}
 
 
 @dataclass(frozen=True)
@@ -40,6 +48,18 @@ class Report:
     tools: int
     strings: int
     findings: tuple[Finding, ...]
+
+    @property
+    def blocking(self) -> tuple[Finding, ...]:
+        return tuple(finding for finding in self.findings if finding.level == BLOCK)
+
+    @property
+    def warnings(self) -> tuple[Finding, ...]:
+        return tuple(finding for finding in self.findings if finding.level == WARN)
+
+    def exit_code(self, *, strict: bool = False) -> int:
+        """1 on a blocking finding, or on any finding when ``strict``; else 0."""
+        return 1 if self.blocking or (strict and self.findings) else 0
 
     def as_dict(self) -> dict[str, Any]:
         return {

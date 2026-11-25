@@ -11,7 +11,8 @@ from pathlib import Path
 import pytest
 
 from tollhouse import __version__
-from tollhouse.cli import SELL_LINE, main
+from tollhouse.check import Finding, Report
+from tollhouse.cli import SELL_LINE, main, render
 
 CLEAN = Path(__file__).parent / "clean_tools.json"
 PHRASE = "Ignore all previous instructions"
@@ -55,6 +56,8 @@ def test_json_prints_the_answer_for_a_script(tmp_path: Path, capsys: pytest.Capt
             "rule": "ignore_previous_instructions",
             "rule_name": "Ignore previous instructions",
             "matched": PHRASE,
+            "level": "block",
+            "related": [],
         }
     ]
 
@@ -116,3 +119,42 @@ def test_output_a_pipe_cannot_encode_is_escaped_never_fatal(tmp_path: Path, monk
     assert main(["check", str(path)]) == 1
     sys.stdout.flush()
     assert b"tools-\\U0001f600.json" in buffer.getvalue()
+
+
+# --- Levels ----------------------------------------------------------------------------------------------------------
+
+
+def _report(*levels: str) -> Report:
+    findings = tuple(
+        Finding(place=f"tools[t].description#{n}", rule="r", rule_name="R", matched="m", level=level)
+        for n, level in enumerate(levels)
+    )
+    return Report(tools=1, strings=len(levels), findings=findings)
+
+
+@pytest.mark.parametrize(
+    ("levels", "plain", "strict"),
+    [
+        ((), 0, 0),
+        (("block",), 1, 1),
+        (("warn",), 0, 1),
+        (("warn", "block"), 1, 1),
+    ],
+    ids=["nothing", "a finding to fix", "a warning alone", "both"],
+)
+def test_a_warning_alone_exits_zero_unless_strict(levels: tuple[str, ...], plain: int, strict: int) -> None:
+    report = _report(*levels)
+    assert report.exit_code() == plain
+    assert report.exit_code(strict=True) == strict
+
+
+def test_a_warning_is_labelled_and_counted_apart_from_a_finding_to_fix() -> None:
+    out = render(_report("warn", "block"), source="tools.json")
+    assert "    warning: R (r): 'm'" in out
+    assert "1 finding. " in out
+    assert "1 warning to weigh" in out
+
+
+def test_strict_is_an_option_of_check(tmp_path: Path) -> None:
+    assert main(["check", str(CLEAN), "--strict"]) == 0
+    assert main(["check", str(_write(tmp_path, _poisoned())), "--strict"]) == 1
