@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "tollhouse"
 version = "0.0.1"
-description = "Check an MCP server's tools before you install or publish it. This first release reads a tools/list answer for prompt-injection phrases, string by string, the way a model reads it."
+description = "Check an MCP server's tools before you install or publish it. Reads a tools/list answer string by string, the way a model reads it, for prompt-injection phrases and credentials, and warns on what the tools say about their data."
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
