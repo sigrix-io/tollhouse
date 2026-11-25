@@ -184,3 +184,38 @@ def test_a_credential_is_a_finding_to_fix_named_by_a_locator(
     (finding,) = json.loads(capsys.readouterr().out)["findings"]
     assert (finding["rule"], finding["level"]) == ("anthropic_api_key", "block")
     assert KEY not in out and KEY not in json.dumps(finding), "the answer never repeats the key"
+
+
+# --- What the tools say about their data -------------------------------------------------------------------------
+
+DATA_CLAIMS = json.loads((Path(__file__).parent / "data_claims_cases.json").read_text(encoding="utf-8"))
+
+
+def _scraped_contacts_for_outreach() -> dict:
+    """The case the rules were written for: scraped listings, and agents' phone numbers offered for outreach."""
+    (case,) = [case for case in DATA_CLAIMS["cases"] if case["name"].startswith("the case behind the rules")]
+    return {"tools": case["tools"]}
+
+
+def test_what_the_tools_say_about_their_data_is_a_warning(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    path = _write(tmp_path, _scraped_contacts_for_outreach())
+    assert main(["check", str(path)]) == 0, "a warning alone passes"
+    out = capsys.readouterr().out
+    assert "  tools[get_porto_agency_phones].description" in out
+    assert "warning: Personal contact data offered for outreach (contact_data_for_outreach)" in out
+    assert "also: tools[search_real_estate].description" in out
+    assert "2 warnings to weigh" in out and "to fix" not in out
+    assert main(["check", str(path), "--strict"]) == 1, "--strict fails on a warning"
+    capsys.readouterr()
+    assert main(["check", str(path), "--json"]) == 0
+    rules = [(f["rule"], f["level"], f["related"]) for f in json.loads(capsys.readouterr().out)["findings"]]
+    assert rules == [
+        ("contact_data_for_outreach", "warn", []),
+        ("scraped_contact_data", "warn", ["tools[search_real_estate].description"]),
+    ]
+
+
+def test_an_honest_server_raises_no_warning(tmp_path: Path) -> None:
+    for case in DATA_CLAIMS["cases"]:
+        if not case["findings"]:
+            assert main(["check", str(_write(tmp_path, {"tools": case["tools"]})), "--strict"]) == 0, case["name"]

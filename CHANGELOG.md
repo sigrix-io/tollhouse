@@ -18,6 +18,12 @@ described in `VERSIONING.md`.
   keys left alone. A credential is a finding to fix, reported by a locator
   (its first and last few characters) and never the key. A check that passed
   before can fail now.
+- `tollhouse check` warns on what a server's tools say about the data they
+  hand out: personal contact data offered for outreach, contact data beside a
+  scraped source, and an open-data claim beside one. A signal alone is
+  ordinary (an SMS tool takes a phone number), so only a combination warns,
+  and a warning alone exits 0. Each names the string it starts at and the
+  others it rests on.
 - `CODE_OF_CONDUCT.md`, issue forms and a pull request template, the set the
   other open repositories carry. Blank issues are off: a report is a wrong
   finding or a change, and the links beside the forms send a security report
