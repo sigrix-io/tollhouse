@@ -8,6 +8,11 @@ described in `VERSIONING.md`.
 
 ### Added
 
+- The credential catalogue (`rules/credential_scan.py`) and the data-claims
+  rules (`rules/data_claims.py`), copied from the Sigrix platform's rule set
+  with the data-claims case table, and tested here on it. The platform could
+  not offer the credential catalogue for copying before: it sat beside the
+  platform's event recording.
 - `CODE_OF_CONDUCT.md`, issue forms and a pull request template, the set the
   other open repositories carry. Blank issues are off: a report is a wrong
   finding or a change, and the links beside the forms send a security report
